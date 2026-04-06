@@ -181,6 +181,7 @@ window.onload = function() {
         document.getElementById('setup-screen').style.display = 'none';
         document.getElementById('exam-screen').style.display = 'block';
         document.getElementById('display-name').innerText = `${state.fullName} (${state.regNum})`;
+        examActive = true;
 
         buildTabs();
         loadQuestion();
@@ -267,6 +268,8 @@ let userSubjects = ['Use of English'];
         let sessionExam = {}; // This stores the random 60/40 pull for the current student
         let timeLeft = 7200; // 120 minutes
         let timerInterval;
+        let examActive = false;
+        let tabSwitchWarnings = 0;
 
         // --- THE RANDOMIZER ---
         function shuffleArray(array) {
@@ -345,6 +348,7 @@ let userSubjects = ['Use of English'];
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('exam-screen').style.display = 'block';
             document.getElementById('display-name').innerText = `${fullName} (${reg})`;
+            examActive = true;
 
             buildTabs();
             loadQuestion();
@@ -404,6 +408,7 @@ let userSubjects = ['Use of English'];
         function confirmSubmit() { if(confirm("Submit exam?")) submitExam(); }
 
        function submitExam() {
+            examActive = false;
             clearInterval(timerInterval);
             let subjectBreakdown = {};
             let totalScore = 0;
@@ -482,6 +487,19 @@ let userSubjects = ['Use of English'];
             };
             localStorage.setItem('jamb_current_session', JSON.stringify(state));
         }
+
+        // --- ANTI-CHEATING: TAB SWITCH DETECTION ---
+        document.addEventListener("visibilitychange", () => {
+            if (examActive && document.visibilityState === 'hidden') {
+                tabSwitchWarnings++;
+                if (tabSwitchWarnings >= 2) {
+                    alert("You have left the exam tab multiple times. Your exam will now be automatically submitted.");
+                    submitExam();
+                } else {
+                    alert("WARNING: Malpractice detected! Please do not leave the exam tab. If you leave again, your exam will be automatically submitted.");
+                }
+            }
+        });
     </script>
 </body>
 </html>

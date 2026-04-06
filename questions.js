@@ -69,7 +69,7 @@ const db = {
         { q: "Identify the word that has the same vowel sound as 'BIRD'.", options: ["beard", "board", "word", "bed"], answer: 2 },
         { q: "Identify the word with the same consonant sound as the underlined letter(s) in 'CHurch'.", options: ["machine", "chemistry", "feature", "champagne"], answer: 2 },
         { q: "Identify the word that rhymes with 'FEAR'.", options: ["bear", "pear", "deer", "hair"], answer: 2 }
-    ]
+    ],
     "Mathematics": [
         // NUMBER BASES & FRACTIONS
         { q: "Evaluate $212_3 - 121_3 + 222_3$", options: ["$313_3$", "$1000_3$", "$1020_3$", "$1222_3$"], answer: 1 },
@@ -139,7 +139,7 @@ const db = {
         { q: "Evaluate $\\int_{0}^{2} (3x^2 - 2x) dx$", options: ["4", "5", "6", "8"], answer: 0 },
         { q: "Find the maximum value of $y = 5 - 2x - x^2$.", options: ["5", "6", "7", "8"], answer: 1 },
         { q: "Find the gradient of the curve $y = x^2 - 3x$ at the point $x = 2$.", options: ["-1", "0", "1", "2"], answer: 2 },
-        { q: "Evaluate the limit as $x$ approaches 2 for $\\frac{x^2 - 4}{x - 2}$.", options: ["0", "2", "4", "infinity"], answer: 2 }
+        { q: "Evaluate the limit as $x$ approaches 2 for $\\frac{x^2 - 4}{x - 2}$.", options: ["0", "2", "4", "infinity"], answer: 2 },
         // COMMERCIAL MATHEMATICS
         { q: "Find the simple interest on ₦8,000 for 4 years at 5% per annum.", options: ["₦1,600", "₦1,200", "₦1,500", "₦2,000"], answer: 0 },
         { q: "A TV set was sold for ₦45,000 at a loss of 10%. What was the cost price?", options: ["₦55,000", "₦50,000", "₦49,500", "₦40,500"], answer: 1 },

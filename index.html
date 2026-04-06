@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JAMB Mock CBT Portal</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f2f5; margin: 0; padding: 0; color: #333; }
+        
+        .header { background-color: #006400; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header h1 { margin: 0; font-size: 18px; }
+        .timer { font-size: 16px; font-weight: bold; background: #fff; color: #d9534f; padding: 5px 10px; border-radius: 4px; border: 2px solid #d9534f; }
+        
+        #setup-screen { display: flex; flex-direction: column; align-items: center; padding: 20px; background: #fff; min-height: 100vh; }
+        .setup-box { width: 100%; max-width: 500px; padding: 20px; background: #f9f9f9; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .setup-box input[type="text"], .setup-box input[type="password"] { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; text-transform: uppercase; }
+        
+        .subject-container { max-height: 300px; overflow-y: auto; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px; margin-top: 15px;}
+        .subject-group { font-weight: bold; color: #006400; margin-top: 10px; margin-bottom: 5px; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 3px;}
+        .subject-selection label { display: block; padding: 10px; margin-bottom: 5px; background: #f8f9fa; border-radius: 4px; cursor: pointer; border: 1px solid #eee; }
+        .subject-selection input[type="checkbox"] { margin-right: 10px; transform: scale(1.2); }
+        .compulsory { background: #d4edda !important; font-weight: bold; border-color: #c3e6cb !important; }
+        
+        .btn-main { width: 100%; padding: 14px; background: #006400; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-main:disabled { background: #888; cursor: not-allowed; }
+        
+        #exam-screen { display: none; }
+        .container { display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; padding: 10px; gap: 15px; }
+        
+        @media (min-width: 768px) {
+            .container { flex-direction: row; }
+            .sidebar { width: 280px; order: 1; }
+            .main-content { flex-grow: 1; order: 2; }
+            .header h1 { font-size: 22px; }
+        }
+
+        .sidebar, .main-content { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .top-nav { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; margin-bottom: 15px; border-bottom: 1px solid #eee; }
+        .sub-tab { padding: 8px 15px; border: none; background: #e9ecef; border-radius: 20px; font-weight: bold; white-space: nowrap; cursor: pointer; }
+        .sub-tab.active { background: #006400; color: white; }
+
+        .question-text { font-size: 16px; margin-bottom: 20px; line-height: 1.5; font-weight: 500; }
+        .options { list-style: none; padding: 0; margin: 0; }
+        .options li { margin-bottom: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; }
+        .options label { display: flex; padding: 15px; cursor: pointer; font-size: 15px; align-items: center; }
+        .options input { margin-right: 15px; transform: scale(1.3); }
+
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 4px; font-weight: bold; color: white; flex: 1; }
+        .btn-prev { background: #6c757d; }
+        .btn-next { background: #007bff; }
+        .btn-submit { background: #d9534f; flex: 0.5; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 8px; margin-top: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px;}
+        .grid-btn { padding: 10px 5px; text-align: center; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px; font-size: 14px; }
+        .grid-btn.answered { background: #c3e6cb; border-color: #28a745; }
+        .grid-btn.active { border: 2px solid #006400; font-weight: bold; }
+        
+        #result-screen { display: none; text-align: center; padding: 60px 20px; }
+        #result-screen h2 { color: #006400; font-size: 28px; }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <div class="setup-box">
+            <h2 style="color: #006400; text-align: center; margin-top: 0;">JAMB CBT Portal</h2>
+            
+            <p style="font-size: 14px; color: #555; font-weight: bold; margin-bottom: 5px;">1. Exam Login Credentials</p>
+            <input type="text" id="full-name" placeholder="Enter Your Full Name" maxlength="50">
+            <input type="text" id="reg-num" placeholder="Enter Username (e.g. JAMB001)" maxlength="15">
+            <input type="password" id="pin-num" placeholder="Enter 4-Digit PIN" maxlength="4">
+            <p id="login-error" style="color: red; font-size: 13px; display: none; margin-top: 0;">Invalid Username or PIN.</p>
+            
+            <p style="font-size: 14px; color: #555; font-weight: bold; margin-top: 15px; margin-bottom: 5px;">2. Select exactly 3 extra subjects</p>
+            
+            <div class="subject-container subject-selection" id="subject-list">
+                <label class="compulsory"><input type="checkbox" checked disabled> Use of English (Compulsory)</label>
+                
+                <div class="subject-group">General Sciences & Arts</div>
+                <label><input type="checkbox" value="Mathematics" class="sub-checkbox"> Mathematics</label>
+                <label><input type="checkbox" value="Chemistry" class="sub-checkbox"> Chemistry</label>
+                <label><input type="checkbox" value="Physics" class="sub-checkbox"> Physics</label>
+                <label><input type="checkbox" value="Economics" class="sub-checkbox"> Economics</label>
+                <label><input type="checkbox" value="Government" class="sub-checkbox"> Government</label>
+                <label><input type="checkbox" value="Geography" class="sub-checkbox"> Geography</label>
+                <label><input type="checkbox" value="History" class="sub-checkbox"> History</label>
+                <label><input type="checkbox" value="Literature in English" class="sub-checkbox"> Literature in English</label>
+                <label><input type="checkbox" value="Commerce" class="sub-checkbox"> Commerce</label>
+                <label><input type="checkbox" value="Principles of Accounts" class="sub-checkbox"> Principles of Accounts</label>
+                <label><input type="checkbox" value="Agricultural Science" class="sub-checkbox"> Agricultural Science</label>
+                <label><input type="checkbox" value="Christian Religious Studies" class="sub-checkbox"> Christian Religious Studies (CRS)</label>
+                <label><input type="checkbox" value="Islamic Studies" class="sub-checkbox"> Islamic Studies</label>
+                <label><input type="checkbox" value="Art (Fine Art)" class="sub-checkbox"> Art (Fine Art)</label>
+                <label><input type="checkbox" value="Music" class="sub-checkbox"> Music</label>
+                <label><input type="checkbox" value="Computer Studies" class="sub-checkbox"> Computer Studies</label>
+                <label><input type="checkbox" value="Home Economics" class="sub-checkbox"> Home Economics</label>
+                <label><input type="checkbox" value="Physical & Health Education" class="sub-checkbox"> Physical & Health Education (PHE)</label>
+                
+                <div class="subject-group">Languages</div>
+                <label><input type="checkbox" value="Arabic" class="sub-checkbox"> Arabic</label>
+                <label><input type="checkbox" value="French" class="sub-checkbox"> French</label>
+                <label><input type="checkbox" value="Hausa" class="sub-checkbox"> Hausa</label>
+                <label><input type="checkbox" value="Igbo" class="sub-checkbox"> Igbo</label>
+                <label><input type="checkbox" value="Yoruba" class="sub-checkbox"> Yoruba</label>
+                <label><input type="checkbox" value="Biology" class="sub-checkbox"> Biology</label>
+                
+                </div>
+            
+            <button class="btn-main" id="start-btn" onclick="startExam()" disabled>START EXAM</button>
+        </div>
+    </div>
+
+    <div id="exam-screen">
+        <div class="header">
+            <h1 id="display-name">JAMB CBT</h1>
+            <div class="timer"><span id="time">120:00</span></div>
+        </div>
+
+        <div class="container">
+            <div class="main-content">
+                <div class="top-nav" id="subject-tabs"></div>
+                <h3 id="q-number" style="margin-top: 0; color: #006400;">Loading...</h3>
+                <div class="question-text" id="q-text">Preparing questions...</div>
+                <ul class="options" id="q-options"></ul>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-prev" onclick="prevQuestion()">Prev</button>
+                    <button class="btn btn-next" onclick="nextQuestion()">Next</button>
+                    <button class="btn btn-submit" onclick="confirmSubmit()">Submit</button>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <h3 style="margin-top: 0; font-size: 16px;">Navigation</h3>
+                <div class="grid" id="q-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2>Exam Completed</h2>
+        <p style="font-size: 18px; color: #333;">Your exam has been submitted securely.</p>
+        <p id="sync-status" style="font-size: 14px; color: #006400; font-weight: bold;">Syncing to server...</p>
+    </div>
+    <script src="questions.js"></script>
+    <script>
+       // --- SECURE STUDENT WHITELIST (JAMB001 to JAMB200) ---
+        const validUsers = {
+            "JAMB001": "8249", "JAMB002": "1938", "JAMB003": "5721", "JAMB004": "3046", "JAMB005": "9182",
+            "JAMB006": "4735", "JAMB007": "6290", "JAMB008": "1584", "JAMB009": "8407", "JAMB010": "2613",
+            "JAMB011": "9350", "JAMB012": "4827", "JAMB013": "7164", "JAMB014": "3592", "JAMB015": "6048",
+            "JAMB016": "2915", "JAMB017": "8371", "JAMB018": "5409", "JAMB019": "1726", "JAMB020": "9583",
+            "JAMB021": "3640", "JAMB022": "8195", "JAMB023": "4251", "JAMB024": "7038", "JAMB025": "2584",
+            "JAMB026": "6917", "JAMB027": "1472", "JAMB028": "9820", "JAMB029": "5364", "JAMB030": "3719",
+            "JAMB031": "8056", "JAMB032": "2491", "JAMB033": "6835", "JAMB034": "1270", "JAMB035": "9643",
+            "JAMB036": "5187", "JAMB037": "7529", "JAMB038": "3964", "JAMB039": "8410", "JAMB040": "4058",
+            "JAMB041": "6392", "JAMB042": "1847", "JAMB043": "9275", "JAMB044": "5610", "JAMB045": "3154",
+            "JAMB046": "7489", "JAMB047": "2836", "JAMB048": "8571", "JAMB049": "4915", "JAMB050": "6028",
+            "JAMB051": "1369", "JAMB052": "9704", "JAMB053": "5248", "JAMB054": "3681", "JAMB055": "8125",
+            "JAMB056": "2569", "JAMB057": "7914", "JAMB058": "4350", "JAMB059": "6782", "JAMB060": "1027",
+            "JAMB061": "9456", "JAMB062": "5891", "JAMB063": "3247", "JAMB064": "8630", "JAMB065": "4075",
+            "JAMB066": "7518", "JAMB067": "2953", "JAMB068": "6492", "JAMB069": "1836", "JAMB070": "9170",
+            "JAMB071": "5714", "JAMB072": "3059", "JAMB073": "8592", "JAMB074": "4937", "JAMB075": "7281",
+            "JAMB076": "2645", "JAMB077": "6180", "JAMB078": "1524", "JAMB079": "9863", "JAMB080": "5307",
+            "JAMB081": "3742", "JAMB082": "8156", "JAMB083": "4691", "JAMB084": "7035", "JAMB085": "2479",
+            "JAMB086": "6923", "JAMB087": "1358", "JAMB088": "9712", "JAMB089": "5146", "JAMB090": "3580",
+            "JAMB091": "8924", "JAMB092": "4268", "JAMB093": "7613", "JAMB094": "2057", "JAMB095": "6591",
+            "JAMB096": "1945", "JAMB097": "9380", "JAMB098": "5824", "JAMB099": "3169", "JAMB100": "8503",
+            "JAMB101": "4157", "JAMB102": "7492", "JAMB103": "2830", "JAMB104": "6275", "JAMB105": "1749",
+            "JAMB106": "9083", "JAMB107": "5428", "JAMB108": "3962", "JAMB109": "8316", "JAMB110": "4850",
+            "JAMB111": "7194", "JAMB112": "2538", "JAMB113": "6082", "JAMB114": "1427", "JAMB115": "9961",
+            "JAMB116": "5304", "JAMB117": "3658", "JAMB118": "8102", "JAMB119": "4537", "JAMB120": "7891",
+            "JAMB121": "2346", "JAMB122": "6780", "JAMB123": "1235", "JAMB124": "9674", "JAMB125": "5129",
+            "JAMB126": "3472", "JAMB127": "8916", "JAMB128": "4360", "JAMB129": "7605", "JAMB130": "2049",
+            "JAMB131": "6583", "JAMB132": "1927", "JAMB133": "9461", "JAMB134": "5806", "JAMB135": "3251",
+            "JAMB136": "8695", "JAMB137": "4039", "JAMB138": "7583", "JAMB139": "2918", "JAMB140": "6452",
+            "JAMB141": "1896", "JAMB142": "9230", "JAMB143": "5674", "JAMB144": "3019", "JAMB145": "8463",
+            "JAMB146": "4907", "JAMB147": "7251", "JAMB148": "2795", "JAMB149": "6130", "JAMB150": "1574",
+            "JAMB151": "9028", "JAMB152": "5462", "JAMB153": "3817", "JAMB154": "8251", "JAMB155": "4695",
+            "JAMB156": "7049", "JAMB157": "2583", "JAMB158": "6927", "JAMB159": "1462", "JAMB160": "9806",
+            "JAMB161": "5240", "JAMB162": "3685", "JAMB163": "8129", "JAMB164": "4573", "JAMB165": "7918",
+            "JAMB166": "2361", "JAMB167": "6805", "JAMB168": "1259", "JAMB169": "9514", "JAMB170": "5068",
+            "JAMB171": "3512", "JAMB172": "8956", "JAMB173": "4301", "JAMB174": "7645", "JAMB175": "2189",
+            "JAMB176": "6534", "JAMB177": "1978", "JAMB178": "9322", "JAMB179": "5867", "JAMB180": "3211",
+            "JAMB181": "8755", "JAMB182": "4109", "JAMB183": "7453", "JAMB184": "2897", "JAMB185": "6341",
+            "JAMB186": "1785", "JAMB187": "9130", "JAMB188": "5574", "JAMB189": "3028", "JAMB190": "8472",
+            "JAMB191": "4816", "JAMB192": "7260", "JAMB193": "2605", "JAMB194": "6059", "JAMB195": "1593",
+            "JAMB196": "9047", "JAMB197": "5481", "JAMB198": "3926", "JAMB199": "8370", "JAMB200": "4715"
+        };
+
+        const GOOGLE_APP_URL = "https://script.google.com/macros/s/AKfycbwsdvLVDO6Dig3eGvWcJHorK5eaMpFZ1SG89FsW93fVJXtWUYjtKFAiJ9QkCH-qS39C/exec";
+
+        // --- QUESTION DATABASE ---
+       
+let userSubjects = ['Use of English'];
+        let currentSubject = 'Use of English';
+        let currentIndex = 0;
+        let answers = {};
+        let sessionExam = {}; // This stores the random 60/40 pull for the current student
+        let timeLeft = 7200; // 120 minutes
+        let timerInterval;
+
+        // --- THE RANDOMIZER ---
+        function shuffleArray(array) {
+            let shuffled = array.slice();
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        const checkboxes = document.querySelectorAll('.sub-checkbox');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('full-name');
+        const regInput = document.getElementById('reg-num');
+        const pinInput = document.getElementById('pin-num');
+        const errorMsg = document.getElementById('login-error');
+
+        function validateForm() {
+            let checkedCount = document.querySelectorAll('.sub-checkbox:checked').length;
+            let fullName = nameInput.value.trim();
+            let reg = regInput.value.trim().toUpperCase();
+            let pin = pinInput.value.trim();
+            
+            if(localStorage.getItem('jamb_exam_done_' + reg)) {
+                startBtn.innerText = "EXAM ALREADY TAKEN";
+                startBtn.disabled = true;
+                errorMsg.style.display = 'none';
+                return;
+            } else {
+                startBtn.innerText = "START EXAM";
+            }
+
+            if (checkedCount === 3) {
+                checkboxes.forEach(cb => { if (!cb.checked) cb.disabled = true; });
+            } else {
+                checkboxes.forEach(cb => cb.disabled = false);
+            }
+            
+            let isValidUser = (validUsers[reg] && validUsers[reg] === pin);
+            
+            if (reg.length > 0 && pin.length > 0 && !isValidUser) {
+                errorMsg.style.display = 'block';
+            } else {
+                errorMsg.style.display = 'none';
+            }
+
+            startBtn.disabled = !(checkedCount === 3 && isValidUser && fullName.length > 2);
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener('change', validateForm));
+        nameInput.addEventListener('input', validateForm);
+        regInput.addEventListener('input', validateForm);
+        pinInput.addEventListener('input', validateForm);
+
+        function startExam() {
+            const reg = regInput.value.trim().toUpperCase();
+            const fullName = nameInput.value.trim();
+            
+            document.querySelectorAll('.sub-checkbox:checked').forEach(cb => {
+                userSubjects.push(cb.value);
+            });
+            
+            // --- SHUFFLE & PULL 60/40 LOGIC ---
+            userSubjects.forEach(sub => {
+                if (db[sub] && db[sub].length > 0) {
+                    let shuffledDb = shuffleArray(db[sub]);
+                    let limit = (sub === 'Use of English') ? 60 : 40;
+                    sessionExam[sub] = shuffledDb.slice(0, limit);
+                } else {
+                    sessionExam[sub] = []; // Fallback if no questions are loaded yet
+                }
+                answers[sub] = new Array(sessionExam[sub].length).fill(null); 
+            });
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('exam-screen').style.display = 'block';
+            document.getElementById('display-name').innerText = `${fullName} (${reg})`;
+
+            buildTabs();
+            loadQuestion();
+
+            timerInterval = setInterval(() => {
+                if (timeLeft <= 0) submitExam();
+                timeLeft--;
+                let h = Math.floor(timeLeft / 3600);
+                let m = Math.floor((timeLeft % 3600) / 60);
+                let s = timeLeft % 60;
+                document.getElementById("time").innerText = h > 0 ? `${h}:${m < 10 ? '0':''}${m}:${s < 10 ? '0':''}${s}` : `${m}:${s < 10 ? '0':''}${s}`;
+            }, 1000);
+        }
+
+        function buildTabs() {
+            let tabsHtml = "";
+            userSubjects.forEach(sub => {
+                let active = sub === currentSubject ? "active" : "";
+                tabsHtml += `<button class="sub-tab ${active}" onclick="switchSubject('${sub}')">${sub}</button>`;
+            });
+            document.getElementById("subject-tabs").innerHTML = tabsHtml;
+        }
+
+        function switchSubject(sub) { currentSubject = sub; currentIndex = 0; buildTabs(); loadQuestion(); }
+
+        function loadQuestion() {
+            const qData = sessionExam[currentSubject] ? sessionExam[currentSubject][currentIndex] : null;
+            if(!qData) {
+                document.getElementById("q-text").innerHTML = "Questions currently unavailable.";
+                document.getElementById("q-options").innerHTML = "";
+                return;
+            }
+            
+            document.getElementById("q-number").innerText = `Question ${currentIndex + 1} of ${sessionExam[currentSubject].length}`;
+            document.getElementById("q-text").innerHTML = qData.q;
+            
+            let optionsHtml = "";
+            qData.options.forEach((opt, idx) => {
+                let checked = answers[currentSubject][currentIndex] === idx ? "checked" : "";
+                optionsHtml += `<li><label><input type="radio" name="opt" value="${idx}" ${checked} onchange="saveAnswer(${idx})"> ${String.fromCharCode(65+idx)}. ${opt}</label></li>`;
+            });
+            document.getElementById("q-options").innerHTML = optionsHtml;
+            renderGrid();
+        }
+
+        function saveAnswer(idx) { answers[currentSubject][currentIndex] = idx; renderGrid(); }
+
+        function renderGrid() {
+            let gridHtml = "";
+            let totalQ = sessionExam[currentSubject] ? sessionExam[currentSubject].length : 0;
+            for (let i = 0; i < totalQ; i++) {
+                let statusClass = answers[currentSubject][i] !== null ? "answered" : "";
+                let activeClass = currentIndex === i ? "active" : "";
+                gridHtml += `<div class="grid-btn ${statusClass} ${activeClass}" onclick="jumpTo(${i})">${i + 1}</div>`;
+            }
+            document.getElementById("q-grid").innerHTML = gridHtml;
+        }
+
+        function jumpTo(idx) { currentIndex = idx; loadQuestion(); }
+        function nextQuestion() { if (currentIndex < sessionExam[currentSubject].length - 1) { currentIndex++; loadQuestion(); } }
+        function prevQuestion() { if (currentIndex > 0) { currentIndex--; loadQuestion(); } }
+
+        function confirmSubmit() { if(confirm("Submit exam?")) submitExam(); }
+
+        function submitExam() {
+            clearInterval(timerInterval);
+            let totalScore = 0;
+            const reg = regInput.value.trim().toUpperCase();
+            const fullName = nameInput.value.trim();
+            
+            userSubjects.forEach(sub => {
+                answers[sub].forEach((ans, idx) => {
+                    if(sessionExam[sub] && sessionExam[sub][idx] && ans === sessionExam[sub][idx].answer) totalScore++;
+                });
+            });
+
+            localStorage.setItem('jamb_exam_done_' + reg, true);
+            document.getElementById("exam-screen").style.display = "none";
+            document.getElementById("result-screen").style.display = "block";
+
+            let payload = {
+                regNum: reg,
+                fullName: fullName,
+                subjects: userSubjects.join(", "),
+                score: totalScore
+            };
+
+            fetch(GOOGLE_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                document.getElementById("sync-status").innerText = "Result saved to master database.";
+            }).catch(error => {
+                document.getElementById("sync-status").innerText = "Network error. Saved to device.";
+            });
+        }
+    </script>
+</body>
+</html>

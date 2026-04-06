@@ -500,6 +500,25 @@ let userSubjects = ['Use of English'];
                 }
             }
         });
+
+        // --- ANTI-CHEATING: DISABLE COPY, PASTE, & RIGHT-CLICK ---
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('copy', e => e.preventDefault());
+        document.addEventListener('cut', e => e.preventDefault());
+        document.addEventListener('paste', e => e.preventDefault());
+
+        // --- ANTI-CHEATING: DISABLE KEYBOARD SHORTCUTS ---
+        document.addEventListener('keydown', e => {
+            if (
+                e.key === 'F12' || // Inspect Element
+                (e.ctrlKey && e.shiftKey && e.key === 'I') || // Inspect Element shortcut
+                (e.ctrlKey && e.key === 'c') || // Copy
+                (e.ctrlKey && e.key === 'v') || // Paste
+                (e.ctrlKey && e.key === 'u') // View Source
+            ) {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>

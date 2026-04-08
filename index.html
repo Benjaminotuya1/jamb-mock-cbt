@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JAMB Mock CBT Portal</title>
+    
+    <!-- MathJax for rendering LaTeX math formulas -->
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0f2f5; margin: 0; padding: 0; color: #333; }
@@ -386,6 +393,11 @@ let userSubjects = ['Use of English'];
             });
             document.getElementById("q-options").innerHTML = optionsHtml;
             renderGrid();
+            
+            // Render math equations if any exist in the question/options
+            if (window.MathJax) {
+                MathJax.typesetPromise().catch((err) => console.error('MathJax Error:', err.message));
+            }
         }
 
         function saveAnswer(idx) { answers[currentSubject][currentIndex] = idx; renderGrid(); persistState(); }

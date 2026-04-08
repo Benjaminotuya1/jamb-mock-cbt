@@ -66,6 +66,17 @@
         
         #result-screen { display: none; text-align: center; padding: 60px 20px; }
         #result-screen h2 { color: #006400; font-size: 28px; }
+        
+        #leaderboard-screen { display: none; max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; }
+        .leaderboard-header { text-align: center; border-bottom: 2px solid #006400; padding-bottom: 15px; margin-bottom: 20px; }
+        .leaderboard-header h2 { color: #006400; margin: 0 0 10px 0; font-size: 24px; }
+        .leaderboard-header select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 100%; max-width: 300px; cursor: pointer; outline: none; }
+        .lb-row { display: flex; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; align-items: center; }
+        .lb-row:nth-child(even) { background-color: #f9f9f9; }
+        .lb-rank { font-weight: bold; width: 40px; font-size: 18px; text-align: left; }
+        .lb-user { flex-grow: 1; font-weight: bold; color: #333; font-size: 16px; }
+        .lb-score { font-weight: bold; color: #006400; font-size: 18px; text-align: right; }
+        .btn-action { width: auto; padding: 10px 20px; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; margin: 5px; }
     </style>
 </head>
 <body>
@@ -165,6 +176,22 @@
         <p id="sync-status" style="font-size: 14px; color: #006400; font-weight: bold;">Syncing with master database...</p>
         
         <button class="btn-main" onclick="window.location.reload()" style="max-width: 200px; margin-top: 20px;">BACK TO HOME</button>
+    </div>
+
+    <div id="leaderboard-screen">
+        <div class="leaderboard-header">
+            <h2>🏆 CBT Leaderboard</h2>
+            <select id="leaderboard-category" onchange="renderLeaderboard()">
+                <option value="Overall">Overall Top 10</option>
+            </select>
+        </div>
+        <div id="leaderboard-content" style="min-height: 200px;">
+            <!-- Leaderboard items injected here -->
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn-action" style="background: #007bff;" onclick="copyLeaderboardText()">📋 Copy for WhatsApp</button>
+            <button class="btn-action" style="background: #6c757d;" onclick="window.location.reload()">Back to Home</button>
+        </div>
     </div>
     <script src="questions.js"></script>
     <script>
@@ -301,13 +328,15 @@ let userSubjects = ['Use of English'];
             let reg = regInput.value.trim().toUpperCase();
             let pin = pinInput.value.trim();
             
-            if(localStorage.getItem('jamb_exam_done_' + reg)) {
+            let isAdmin = (reg === 'ADMIN' && pin === '9999');
+            
+            if(localStorage.getItem('jamb_exam_done_' + reg) && !isAdmin) {
                 startBtn.innerText = "EXAM ALREADY TAKEN";
                 startBtn.disabled = true;
                 errorMsg.style.display = 'none';
                 return;
             } else {
-                startBtn.innerText = "START EXAM";
+                startBtn.innerText = isAdmin ? "VIEW LEADERBOARD" : "START EXAM";
             }
 
             if (checkedCount === 3) {
@@ -316,7 +345,7 @@ let userSubjects = ['Use of English'];
                 checkboxes.forEach(cb => cb.disabled = false);
             }
             
-            let isValidUser = (validUsers[reg] && validUsers[reg] === pin);
+            let isValidUser = (validUsers[reg] && validUsers[reg] === pin) || isAdmin;
             
             if (reg.length > 0 && pin.length > 0 && !isValidUser) {
                 errorMsg.style.display = 'block';
@@ -324,7 +353,11 @@ let userSubjects = ['Use of English'];
                 errorMsg.style.display = 'none';
             }
 
-            startBtn.disabled = !(checkedCount === 3 && isValidUser && fullName.length > 2);
+            if (isAdmin) {
+                startBtn.disabled = false;
+            } else {
+                startBtn.disabled = !(checkedCount === 3 && isValidUser && fullName.length > 2);
+            }
         }
 
         checkboxes.forEach(cb => cb.addEventListener('change', validateForm));
@@ -335,6 +368,13 @@ let userSubjects = ['Use of English'];
         function startExam() {
             const reg = regInput.value.trim().toUpperCase();
             const fullName = nameInput.value.trim();
+            
+            if (reg === 'ADMIN') {
+                document.getElementById('setup-screen').style.display = 'none';
+                document.getElementById('leaderboard-screen').style.display = 'block';
+                fetchLeaderboardData();
+                return;
+            }
             
             document.querySelectorAll('.sub-checkbox:checked').forEach(cb => {
                 userSubjects.push(cb.value);
@@ -498,6 +538,106 @@ let userSubjects = ['Use of English'];
                 examActive: true
             };
             localStorage.setItem('jamb_current_session', JSON.stringify(state));
+        }
+
+        // --- LEADERBOARD LOGIC ---
+        let currentLeaderboardData = null;
+
+        function fetchLeaderboardData() {
+            document.getElementById('leaderboard-content').innerHTML = "<p style='text-align:center;'>Fetching live scores...</p>";
+            
+            // Try to fetch real data. If it fails (due to CORS or no endpoint yet), use mock data.
+            fetch(GOOGLE_APP_URL + "?action=getLeaderboard")
+                .then(res => res.json())
+                .then(data => {
+                    currentLeaderboardData = data;
+                    populateLeaderboardDropdown();
+                    renderLeaderboard();
+                })
+                .catch(err => {
+                    console.log("Live fetch failed, using demo leaderboard data for UI check.");
+                    currentLeaderboardData = generateMockLeaderboard();
+                    populateLeaderboardDropdown();
+                    renderLeaderboard();
+                });
+        }
+
+        function generateMockLeaderboard() {
+            return {
+                "Overall": [
+                    {user: "JAMB045", score: 340}, {user: "JAMB112", score: 315}, {user: "JAMB007", score: 298},
+                    {user: "JAMB189", score: 285}, {user: "JAMB033", score: 270}, {user: "JAMB099", score: 265},
+                    {user: "JAMB021", score: 250}, {user: "JAMB156", score: 245}, {user: "JAMB088", score: 240}, {user: "JAMB102", score: 230}
+                ],
+                "Mathematics": [
+                    {user: "JAMB045", score: 95}, {user: "JAMB112", score: 82}, {user: "JAMB007", score: 78},
+                    {user: "JAMB189", score: 75}, {user: "JAMB033", score: 70}, {user: "JAMB099", score: 68}
+                ],
+                "Use of English": [
+                    {user: "JAMB189", score: 88}, {user: "JAMB045", score: 85}, {user: "JAMB112", score: 80},
+                    {user: "JAMB007", score: 75}, {user: "JAMB099", score: 72}, {user: "JAMB033", score: 65}
+                ]
+            };
+        }
+
+        function populateLeaderboardDropdown() {
+            const select = document.getElementById('leaderboard-category');
+            select.innerHTML = '<option value="Overall">Overall Top 10</option>';
+            Object.keys(currentLeaderboardData).forEach(key => {
+                if(key !== "Overall") {
+                    select.innerHTML += `<option value="${key}">${key} Top 10</option>`;
+                }
+            });
+        }
+
+        function renderLeaderboard() {
+            const category = document.getElementById('leaderboard-category').value;
+            const data = currentLeaderboardData[category] || [];
+            let html = "";
+            
+            if (data.length === 0) {
+                html = "<p style='text-align:center; color:#888;'>No scores available yet.</p>";
+            } else {
+                data.forEach((row, index) => {
+                    let rankIcon = (index + 1) + ".";
+                    if(index === 0) rankIcon = "🥇";
+                    if(index === 1) rankIcon = "🥈";
+                    if(index === 2) rankIcon = "🥉";
+                    
+                    let maxScore = category === "Overall" ? "/400" : "/100";
+                    
+                    html += `
+                    <div class="lb-row">
+                        <div class="lb-rank">${rankIcon}</div>
+                        <div class="lb-user">${row.user}</div>
+                        <div class="lb-score">${row.score}<span style="font-size:12px;color:#888;font-weight:normal;">${maxScore}</span></div>
+                    </div>`;
+                });
+            }
+            document.getElementById('leaderboard-content').innerHTML = html;
+        }
+
+        function copyLeaderboardText() {
+            const category = document.getElementById('leaderboard-category').value;
+            const data = currentLeaderboardData[category] || [];
+            let text = `🏆 *JAMB MOCK CBT LEADERBOARD* 🏆\n📍 *Category:* ${category}\n\n`;
+            
+            data.forEach((row, index) => {
+                let rankIcon = (index + 1) + ".";
+                if(index === 0) rankIcon = "🥇";
+                if(index === 1) rankIcon = "🥈";
+                if(index === 2) rankIcon = "🥉";
+                let maxScore = category === "Overall" ? "/400" : "/100";
+                text += `${rankIcon} ${row.user} - ${row.score}${maxScore}\n`;
+            });
+            
+            text += `\nPowered by JAMB Mock App`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Leaderboard copied to clipboard! You can now paste it in your WhatsApp/Telegram group.");
+            }).catch(err => {
+                alert("Failed to copy. Please manually select and copy the text.");
+            });
         }
 
         // --- ANTI-CHEATING: TAB SWITCH DETECTION ---

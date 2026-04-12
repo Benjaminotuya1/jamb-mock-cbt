@@ -6,6 +6,7 @@
     <title>JAMB Mock CBT Portal</title>
     
     <!-- MathJax for rendering LaTeX math formulas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
     </script>
@@ -17,6 +18,7 @@
         
         .header { background-color: #006400; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header h1 { margin: 0; font-size: 18px; }
+        .header-controls { display: flex; align-items: center; gap: 10px; }
         .timer { font-size: 16px; font-weight: bold; background: #fff; color: #d9534f; padding: 5px 10px; border-radius: 4px; border: 2px solid #d9534f; }
         
         #setup-screen { display: flex; flex-direction: column; align-items: center; padding: 20px; background: #fff; min-height: 100vh; }
@@ -70,13 +72,25 @@
         #leaderboard-screen { display: none; max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; }
         .leaderboard-header { text-align: center; border-bottom: 2px solid #006400; padding-bottom: 15px; margin-bottom: 20px; }
         .leaderboard-header h2 { color: #006400; margin: 0 0 10px 0; font-size: 24px; }
-        .leaderboard-header select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 100%; max-width: 300px; cursor: pointer; outline: none; }
         .lb-row { display: flex; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; align-items: center; }
         .lb-row:nth-child(even) { background-color: #f9f9f9; }
         .lb-rank { font-weight: bold; width: 40px; font-size: 18px; text-align: left; }
         .lb-user { flex-grow: 1; font-weight: bold; color: #333; font-size: 16px; }
         .lb-score { font-weight: bold; color: #006400; font-size: 18px; text-align: right; }
         .btn-action { width: auto; padding: 10px 20px; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; margin: 5px; }
+        
+        /* Calculator Styles */
+        #calc-toggle { background: #fff; color: #006400; border: 1px solid #006400; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;}
+        #calc-toggle:hover { background: #f0f8ff; }
+        #calculator-widget { position: fixed; top: 70px; right: 20px; width: 260px; background: #2c3e50; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 1000; padding: 15px; display: none; }
+        .calc-header { color: white; font-weight: bold; margin-bottom: 10px; text-align: left; font-size: 16px; }
+        #calc-display { width: 100%; height: 45px; font-size: 22px; text-align: right; margin-bottom: 15px; padding: 5px 10px; background: #ecf0f1; border: none; border-radius: 4px; color: #2c3e50; font-weight: bold;}
+        .calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .calc-keys button { padding: 12px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; background: #7f8c8d; color: white; transition: background 0.2s;}
+        .calc-keys button:hover { background: #95a5a6; }
+        .calc-keys button:active { background: #bdc3c7; color: #2c3e50; }
+        .calc-keys .op-btn { background: #e67e22; }
+        .calc-keys .op-btn:hover { background: #d35400; }
     </style>
 </head>
 <body>
@@ -85,11 +99,17 @@
         <div class="setup-box">
             <h2 style="color: #006400; text-align: center; margin-top: 0;">JAMB CBT Portal</h2>
             
-            <p style="font-size: 14px; color: #555; font-weight: bold; margin-bottom: 5px;">1. Exam Login Credentials</p>
+            <p style="font-size: 14px; color: #555; font-weight: bold; margin-bottom: 5px;">1. Student Details</p>
             <input type="text" id="full-name" placeholder="Enter Your Full Name" maxlength="50">
-            <input type="text" id="reg-num" placeholder="Enter Username (e.g. JAMB001)" maxlength="15">
-            <input type="password" id="pin-num" placeholder="Enter 4-Digit PIN" maxlength="4">
-            <p id="login-error" style="color: red; font-size: 13px; display: none; margin-top: 0;">Invalid Username or PIN.</p>
+            <input type="tel" id="phone-num" placeholder="Enter Phone Number" maxlength="15" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
+            
+            <select id="department-category" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; font-weight: bold;">
+                <option value="">-- Select Your Department --</option>
+                <option value="Science">Science</option>
+                <option value="Arts">Arts</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Others">Others</option>
+            </select>
             
             <p style="font-size: 14px; color: #555; font-weight: bold; margin-top: 15px; margin-bottom: 5px;">2. Select exactly 3 extra subjects</p>
             
@@ -134,7 +154,10 @@
     <div id="exam-screen">
         <div class="header">
             <h1 id="display-name">JAMB CBT</h1>
-            <div class="timer"><span id="time">120:00</span></div>
+            <div class="header-controls">
+                <button id="calc-toggle" onclick="toggleCalculator()">🖩 Calculator</button>
+                <div class="timer"><span id="time">120:00</span></div>
+            </div>
         </div>
 
         <div class="container">
@@ -158,6 +181,31 @@
         </div>
     </div>
 
+    <!-- Calculator Widget -->
+    <div id="calculator-widget">
+        <div class="calc-header">Standard Calculator <span onclick="toggleCalculator()" style="float:right;cursor:pointer;color:#e74c3c;">✖</span></div>
+        <input type="text" id="calc-display" disabled>
+        <div class="calc-keys">
+            <button onclick="calcInput('7')">7</button>
+            <button onclick="calcInput('8')">8</button>
+            <button onclick="calcInput('9')">9</button>
+            <button class="op-btn" onclick="calcInput('/')">÷</button>
+            <button onclick="calcInput('4')">4</button>
+            <button onclick="calcInput('5')">5</button>
+            <button onclick="calcInput('6')">6</button>
+            <button class="op-btn" onclick="calcInput('*')">×</button>
+            <button onclick="calcInput('1')">1</button>
+            <button onclick="calcInput('2')">2</button>
+            <button onclick="calcInput('3')">3</button>
+            <button class="op-btn" onclick="calcInput('-')">-</button>
+            <button onclick="calcInput('0')">0</button>
+            <button onclick="calcInput('.')">.</button>
+            <button class="op-btn" onclick="calcCalculate()" style="background: #27ae60;">=</button>
+            <button class="op-btn" onclick="calcInput('+')">+</button>
+            <button onclick="calcClear()" style="grid-column: span 4; background: #c0392b; margin-top: 5px;">Clear (C)</button>
+        </div>
+    </div>
+
     <div id="result-screen">
         <h2>Exam Completed</h2>
         <div id="score-summary" style="margin: 20px auto; padding: 20px; max-width: 450px; border: 1px solid #006400; border-radius: 10px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: left;">
@@ -176,19 +224,28 @@
         <p id="sync-status" style="font-size: 14px; color: #006400; font-weight: bold;">Syncing with master database...</p>
         
         <button class="btn-main" onclick="window.location.reload()" style="max-width: 200px; margin-top: 20px;">BACK TO HOME</button>
+        <button class="btn-main" onclick="viewLeaderboard()" style="max-width: 200px; margin-top: 20px; background: #007bff;">VIEW LEADERBOARD</button>
     </div>
 
     <div id="leaderboard-screen">
-        <div class="leaderboard-header">
-            <h2>🏆 CBT Leaderboard</h2>
-            <select id="leaderboard-category" onchange="renderLeaderboard()">
+        <div id="leaderboard-export-area" style="background: #fff; padding: 15px; border-radius: 8px;">
+            <div class="leaderboard-header">
+                <h2>🏆 CBT Leaderboard</h2>
+                <p id="lb-category-title" style="margin: 0; font-weight: bold; color: #555; font-size: 18px;">Overall Top 10</p>
+            </div>
+            <div id="leaderboard-content" style="min-height: 200px;">
+                <!-- Leaderboard items injected here -->
+            </div>
+            <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #888; font-weight: bold;">
+                Powered by JAMB Mock App
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+            <select id="leaderboard-category" onchange="renderLeaderboard()" style="padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 100%; max-width: 300px; margin-bottom: 15px; cursor: pointer; outline: none;">
                 <option value="Overall">Overall Top 10</option>
-            </select>
-        </div>
-        <div id="leaderboard-content" style="min-height: 200px;">
-            <!-- Leaderboard items injected here -->
-        </div>
-        <div style="text-align: center; margin-top: 20px;">
+            </select><br>
+            <button class="btn-action" style="background: #28a745;" onclick="downloadLeaderboardImage()">🖼️ Download Image</button>
             <button class="btn-action" style="background: #007bff;" onclick="copyLeaderboardText()">📋 Copy for WhatsApp</button>
             <button class="btn-action" style="background: #6c757d;" onclick="window.location.reload()">Back to Home</button>
         </div>
@@ -203,7 +260,7 @@ window.onload = function() {
         
         // Restore variables
         nameInput.value = state.fullName;
-        regInput.value = state.regNum;
+        document.getElementById('phone-num').value = state.phone;
         userSubjects = state.userSubjects;
         currentSubject = state.currentSubject;
         currentIndex = state.currentIndex;
@@ -214,7 +271,7 @@ window.onload = function() {
         // Jump straight into the exam
         document.getElementById('setup-screen').style.display = 'none';
         document.getElementById('exam-screen').style.display = 'block';
-        document.getElementById('display-name').innerText = `${state.fullName} (${state.regNum})`;
+        document.getElementById('display-name').innerText = `${state.fullName}`;
         examActive = true;
 
         buildTabs();
@@ -247,51 +304,8 @@ function startTimer() {
 
 
         
-       // --- SECURE STUDENT WHITELIST (JAMB001 to JAMB200) ---
-        const validUsers = {
-            "JAMB001": "8249", "JAMB002": "1938", "JAMB003": "5721", "JAMB004": "3046", "JAMB005": "9182",
-            "JAMB006": "4735", "JAMB007": "6290", "JAMB008": "1584", "JAMB009": "8407", "JAMB010": "2613",
-            "JAMB011": "9350", "JAMB012": "4827", "JAMB013": "7164", "JAMB014": "3592", "JAMB015": "6048",
-            "JAMB016": "2915", "JAMB017": "8371", "JAMB018": "5409", "JAMB019": "1726", "JAMB020": "9583",
-            "JAMB021": "3640", "JAMB022": "8195", "JAMB023": "4251", "JAMB024": "7038", "JAMB025": "2584",
-            "JAMB026": "6917", "JAMB027": "1472", "JAMB028": "9820", "JAMB029": "5364", "JAMB030": "3719",
-            "JAMB031": "8056", "JAMB032": "2491", "JAMB033": "6835", "JAMB034": "1270", "JAMB035": "9643",
-            "JAMB036": "5187", "JAMB037": "7529", "JAMB038": "3964", "JAMB039": "8410", "JAMB040": "4058",
-            "JAMB041": "6392", "JAMB042": "1847", "JAMB043": "9275", "JAMB044": "5610", "JAMB045": "3154",
-            "JAMB046": "7489", "JAMB047": "2836", "JAMB048": "8571", "JAMB049": "4915", "JAMB050": "6028",
-            "JAMB051": "1369", "JAMB052": "9704", "JAMB053": "5248", "JAMB054": "3681", "JAMB055": "8125",
-            "JAMB056": "2569", "JAMB057": "7914", "JAMB058": "4350", "JAMB059": "6782", "JAMB060": "1027",
-            "JAMB061": "9456", "JAMB062": "5891", "JAMB063": "3247", "JAMB064": "8630", "JAMB065": "4075",
-            "JAMB066": "7518", "JAMB067": "2953", "JAMB068": "6492", "JAMB069": "1836", "JAMB070": "9170",
-            "JAMB071": "5714", "JAMB072": "3059", "JAMB073": "8592", "JAMB074": "4937", "JAMB075": "7281",
-            "JAMB076": "2645", "JAMB077": "6180", "JAMB078": "1524", "JAMB079": "9863", "JAMB080": "5307",
-            "JAMB081": "3742", "JAMB082": "8156", "JAMB083": "4691", "JAMB084": "7035", "JAMB085": "2479",
-            "JAMB086": "6923", "JAMB087": "1358", "JAMB088": "9712", "JAMB089": "5146", "JAMB090": "3580",
-            "JAMB091": "8924", "JAMB092": "4268", "JAMB093": "7613", "JAMB094": "2057", "JAMB095": "6591",
-            "JAMB096": "1945", "JAMB097": "9380", "JAMB098": "5824", "JAMB099": "3169", "JAMB100": "8503",
-            "JAMB101": "4157", "JAMB102": "7492", "JAMB103": "2830", "JAMB104": "6275", "JAMB105": "1749",
-            "JAMB106": "9083", "JAMB107": "5428", "JAMB108": "3962", "JAMB109": "8316", "JAMB110": "4850",
-            "JAMB111": "7194", "JAMB112": "2538", "JAMB113": "6082", "JAMB114": "1427", "JAMB115": "9961",
-            "JAMB116": "5304", "JAMB117": "3658", "JAMB118": "8102", "JAMB119": "4537", "JAMB120": "7891",
-            "JAMB121": "2346", "JAMB122": "6780", "JAMB123": "1235", "JAMB124": "9674", "JAMB125": "5129",
-            "JAMB126": "3472", "JAMB127": "8916", "JAMB128": "4360", "JAMB129": "7605", "JAMB130": "2049",
-            "JAMB131": "6583", "JAMB132": "1927", "JAMB133": "9461", "JAMB134": "5806", "JAMB135": "3251",
-            "JAMB136": "8695", "JAMB137": "4039", "JAMB138": "7583", "JAMB139": "2918", "JAMB140": "6452",
-            "JAMB141": "1896", "JAMB142": "9230", "JAMB143": "5674", "JAMB144": "3019", "JAMB145": "8463",
-            "JAMB146": "4907", "JAMB147": "7251", "JAMB148": "2795", "JAMB149": "6130", "JAMB150": "1574",
-            "JAMB151": "9028", "JAMB152": "5462", "JAMB153": "3817", "JAMB154": "8251", "JAMB155": "4695",
-            "JAMB156": "7049", "JAMB157": "2583", "JAMB158": "6927", "JAMB159": "1462", "JAMB160": "9806",
-            "JAMB161": "5240", "JAMB162": "3685", "JAMB163": "8129", "JAMB164": "4573", "JAMB165": "7918",
-            "JAMB166": "2361", "JAMB167": "6805", "JAMB168": "1259", "JAMB169": "9514", "JAMB170": "5068",
-            "JAMB171": "3512", "JAMB172": "8956", "JAMB173": "4301", "JAMB174": "7645", "JAMB175": "2189",
-            "JAMB176": "6534", "JAMB177": "1978", "JAMB178": "9322", "JAMB179": "5867", "JAMB180": "3211",
-            "JAMB181": "8755", "JAMB182": "4109", "JAMB183": "7453", "JAMB184": "2897", "JAMB185": "6341",
-            "JAMB186": "1785", "JAMB187": "9130", "JAMB188": "5574", "JAMB189": "3028", "JAMB190": "8472",
-            "JAMB191": "4816", "JAMB192": "7260", "JAMB193": "2605", "JAMB194": "6059", "JAMB195": "1593",
-            "JAMB196": "9047", "JAMB197": "5481", "JAMB198": "3926", "JAMB199": "8370", "JAMB200": "4715"
-        };
-
-        const GOOGLE_APP_URL = "https://script.google.com/macros/s/AKfycbwsdvLVDO6Dig3eGvWcJHorK5eaMpFZ1SG89FsW93fVJXtWUYjtKFAiJ9QkCH-qS39C/exec";
+        // Replace this URL with the new Web App URL you got from Google Apps Script!
+        const GOOGLE_APP_URL = "https://script.google.com/macros/s/AKfycbxUOZ4Ihcd23g7Q3B5MekRXk4e14wK3FHAs10oIbkBOQN51cSn6fb9stg_HM03O-QgsFw/exec";
 
         // --- QUESTION DATABASE ---
        
@@ -318,22 +332,20 @@ let userSubjects = ['Use of English'];
         const checkboxes = document.querySelectorAll('.sub-checkbox');
         const startBtn = document.getElementById('start-btn');
         const nameInput = document.getElementById('full-name');
-        const regInput = document.getElementById('reg-num');
-        const pinInput = document.getElementById('pin-num');
-        const errorMsg = document.getElementById('login-error');
+        const phoneInput = document.getElementById('phone-num');
+        const catInput = document.getElementById('department-category');
 
         function validateForm() {
             let checkedCount = document.querySelectorAll('.sub-checkbox:checked').length;
             let fullName = nameInput.value.trim();
-            let reg = regInput.value.trim().toUpperCase();
-            let pin = pinInput.value.trim();
+            let phone = phoneInput.value.trim();
+            let category = catInput.value;
             
-            let isAdmin = (reg === 'ADMIN' && pin === '9999');
+            let isAdmin = (fullName.toUpperCase() === 'ADMIN' && phone === '9999');
             
-            if(localStorage.getItem('jamb_exam_done_' + reg) && !isAdmin) {
+            if(localStorage.getItem('jamb_exam_done_' + phone) && !isAdmin) {
                 startBtn.innerText = "EXAM ALREADY TAKEN";
                 startBtn.disabled = true;
-                errorMsg.style.display = 'none';
                 return;
             } else {
                 startBtn.innerText = isAdmin ? "VIEW LEADERBOARD" : "START EXAM";
@@ -345,34 +357,25 @@ let userSubjects = ['Use of English'];
                 checkboxes.forEach(cb => cb.disabled = false);
             }
             
-            let isValidUser = (validUsers[reg] && validUsers[reg] === pin) || isAdmin;
-            
-            if (reg.length > 0 && pin.length > 0 && !isValidUser) {
-                errorMsg.style.display = 'block';
-            } else {
-                errorMsg.style.display = 'none';
-            }
-
             if (isAdmin) {
                 startBtn.disabled = false;
             } else {
-                startBtn.disabled = !(checkedCount === 3 && isValidUser && fullName.length > 2);
+                startBtn.disabled = !(checkedCount === 3 && fullName.length > 2 && phone.length >= 10 && category !== "");
             }
         }
 
         checkboxes.forEach(cb => cb.addEventListener('change', validateForm));
         nameInput.addEventListener('input', validateForm);
-        regInput.addEventListener('input', validateForm);
-        pinInput.addEventListener('input', validateForm);
+        phoneInput.addEventListener('input', validateForm);
+        catInput.addEventListener('change', validateForm);
 
         function startExam() {
-            const reg = regInput.value.trim().toUpperCase();
             const fullName = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
             
-            if (reg === 'ADMIN') {
+            if (fullName.toUpperCase() === 'ADMIN' && phone === '9999') {
                 document.getElementById('setup-screen').style.display = 'none';
-                document.getElementById('leaderboard-screen').style.display = 'block';
-                fetchLeaderboardData();
+                viewLeaderboard();
                 return;
             }
             
@@ -394,7 +397,7 @@ let userSubjects = ['Use of English'];
 
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('exam-screen').style.display = 'block';
-            document.getElementById('display-name').innerText = `${fullName} (${reg})`;
+            document.getElementById('display-name').innerText = `${fullName}`;
             examActive = true;
 
             buildTabs();
@@ -459,6 +462,12 @@ let userSubjects = ['Use of English'];
 
         function confirmSubmit() { if(confirm("Submit exam?")) submitExam(); }
 
+        function viewLeaderboard() {
+            document.getElementById("result-screen").style.display = "none";
+            document.getElementById("leaderboard-screen").style.display = "block";
+            fetchLeaderboardData();
+        }
+
        function submitExam() {
             examActive = false;
             clearInterval(timerInterval);
@@ -466,8 +475,9 @@ let userSubjects = ['Use of English'];
             let totalScore = 0;
             let detailsHtml = ""; // To build the subject list display
             
-            const reg = regInput.value.trim().toUpperCase();
             const fullName = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
+            const category = catInput.value;
             
             userSubjects.forEach(sub => {
                 let subScore = 0;
@@ -499,15 +509,16 @@ let userSubjects = ['Use of English'];
             document.getElementById("final-aggregate").innerText = totalScore;
 
             // Save status and switch screens
-            localStorage.setItem('jamb_exam_done_' + reg, true);
+            localStorage.setItem('jamb_exam_done_' + phone, true);
             localStorage.removeItem('jamb_current_session');
             document.getElementById("exam-screen").style.display = "none";
             document.getElementById("result-screen").style.display = "block";
 
             // Send full breakdown to Google Sheets
             let payload = {
-                regNum: reg,
                 fullName: fullName,
+                phone: phone,
+                category: category,
                 subjects: userSubjects.join(", "),
                 breakdown: JSON.stringify(subjectBreakdown),
                 score: totalScore
@@ -515,11 +526,11 @@ let userSubjects = ['Use of English'];
 
             fetch(GOOGLE_APP_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                // Text/plain bypasses strict CORS preflight, allowing us to read the response successfully!
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                 body: JSON.stringify(payload)
-            }).then(() => {
-                document.getElementById("sync-status").innerText = "Success: Result synced to server.";
+            }).then(res => res.json()).then(data => {
+                document.getElementById("sync-status").innerText = "Success: Result synced securely to Google Sheets.";
             }).catch(error => {
                 document.getElementById("sync-status").innerText = "Saved offline. Please notify the admin.";
             });
@@ -528,7 +539,8 @@ let userSubjects = ['Use of English'];
         function persistState() {
             const state = {
                 fullName: nameInput.value.trim(),
-                regNum: regInput.value.trim().toUpperCase(),
+                phone: phoneInput.value.trim(),
+                category: catInput.value,
                 userSubjects: userSubjects,
                 currentSubject: currentSubject,
                 currentIndex: currentIndex,
@@ -547,10 +559,37 @@ let userSubjects = ['Use of English'];
             document.getElementById('leaderboard-content').innerHTML = "<p style='text-align:center;'>Fetching live scores...</p>";
             
             // Try to fetch real data. If it fails (due to CORS or no endpoint yet), use mock data.
-            fetch(GOOGLE_APP_URL + "?action=getLeaderboard")
+            fetch(GOOGLE_APP_URL)
                 .then(res => res.json())
-                .then(data => {
-                    currentLeaderboardData = data;
+                .then(records => {
+                    // Group flat data into categories
+                    let lb = { "Overall": [], "Science": [], "Arts": [], "Commercial": [] };
+                    
+                    records.forEach(row => {
+                        let entry = { user: row.fullName, score: parseInt(row.score) || 0 };
+                        lb["Overall"].push(entry);
+                        
+                        if(row.category && lb[row.category]) {
+                            lb[row.category].push(entry);
+                        }
+                        
+                        try {
+                            let breakdown = JSON.parse(row.breakdown);
+                            for (let sub in breakdown) {
+                                if (!lb[sub]) lb[sub] = [];
+                                lb[sub].push({ user: row.fullName, score: parseInt(breakdown[sub]) });
+                            }
+                        } catch(e) {}
+                    });
+                    
+                    // Sort and cap at Top 10 for Overall, Top 5 for the rest
+                    for (let cat in lb) {
+                        lb[cat].sort((a,b) => b.score - a.score);
+                        let limit = cat === "Overall" ? 10 : 5;
+                        lb[cat] = lb[cat].slice(0, limit);
+                    }
+                    
+                    currentLeaderboardData = lb;
                     populateLeaderboardDropdown();
                     renderLeaderboard();
                 })
@@ -565,17 +604,17 @@ let userSubjects = ['Use of English'];
         function generateMockLeaderboard() {
             return {
                 "Overall": [
-                    {user: "JAMB045", score: 340}, {user: "JAMB112", score: 315}, {user: "JAMB007", score: 298},
-                    {user: "JAMB189", score: 285}, {user: "JAMB033", score: 270}, {user: "JAMB099", score: 265},
-                    {user: "JAMB021", score: 250}, {user: "JAMB156", score: 245}, {user: "JAMB088", score: 240}, {user: "JAMB102", score: 230}
+                    {user: "JAMB045", name: "David Ojo", score: 340}, {user: "JAMB112", name: "Sarah Musa", score: 315}, {user: "JAMB007", name: "John Doe", score: 298},
+                    {user: "JAMB189", name: "Mercy Okafor", score: 285}, {user: "JAMB033", name: "Paul Adamu", score: 270}, {user: "JAMB099", name: "Diana Prince", score: 265},
+                    {user: "JAMB021", name: "Evan Wright", score: 250}, {user: "JAMB156", name: "Fiona Clark", score: 245}, {user: "JAMB088", name: "George Hall", score: 240}, {user: "JAMB102", name: "Hannah Lee", score: 230}
                 ],
                 "Mathematics": [
-                    {user: "JAMB045", score: 95}, {user: "JAMB112", score: 82}, {user: "JAMB007", score: 78},
-                    {user: "JAMB189", score: 75}, {user: "JAMB033", score: 70}, {user: "JAMB099", score: 68}
+                    {user: "JAMB045", name: "David Ojo", score: 95}, {user: "JAMB112", name: "Sarah Musa", score: 82}, {user: "JAMB007", name: "John Doe", score: 78},
+                    {user: "JAMB189", name: "Mercy Okafor", score: 75}, {user: "JAMB033", name: "Paul Adamu", score: 70}, {user: "JAMB099", name: "Diana Prince", score: 68}
                 ],
                 "Use of English": [
-                    {user: "JAMB189", score: 88}, {user: "JAMB045", score: 85}, {user: "JAMB112", score: 80},
-                    {user: "JAMB007", score: 75}, {user: "JAMB099", score: 72}, {user: "JAMB033", score: 65}
+                    {user: "JAMB189", name: "Mercy Okafor", score: 88}, {user: "JAMB045", name: "David Ojo", score: 85}, {user: "JAMB112", name: "Sarah Musa", score: 80},
+                    {user: "JAMB007", name: "John Doe", score: 75}, {user: "JAMB099", name: "Diana Prince", score: 72}, {user: "JAMB033", name: "Paul Adamu", score: 65}
                 ]
             };
         }
@@ -592,6 +631,10 @@ let userSubjects = ['Use of English'];
 
         function renderLeaderboard() {
             const category = document.getElementById('leaderboard-category').value;
+            const titleEl = document.getElementById('lb-category-title');
+            if (titleEl) {
+                titleEl.innerText = category + " Top 10";
+            }
             const data = currentLeaderboardData[category] || [];
             let html = "";
             
@@ -615,6 +658,20 @@ let userSubjects = ['Use of English'];
                 });
             }
             document.getElementById('leaderboard-content').innerHTML = html;
+        }
+
+        function downloadLeaderboardImage() {
+            const exportArea = document.getElementById('leaderboard-export-area');
+            const originalBg = exportArea.style.background;
+            exportArea.style.background = "#ffffff"; // Force white background for safety
+            
+            html2canvas(exportArea, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
+                exportArea.style.background = originalBg;
+                const link = document.createElement('a');
+                link.download = `JAMB_Leaderboard_${document.getElementById('leaderboard-category').value.replace(/ /g, "_")}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            }).catch(err => alert("Failed to generate image."));
         }
 
         function copyLeaderboardText() {
@@ -671,6 +728,88 @@ let userSubjects = ['Use of English'];
                 e.preventDefault();
             }
         });
+
+        // --- CALCULATOR LOGIC ---
+        function toggleCalculator() {
+            const calc = document.getElementById('calculator-widget');
+            calc.style.display = (calc.style.display === 'none' || calc.style.display === '') ? 'block' : 'none';
+        }
+
+        function calcInput(val) {
+            const display = document.getElementById('calc-display');
+            if(display.value === 'Error') display.value = '';
+            display.value += val;
+        }
+
+        function calcClear() {
+            document.getElementById('calc-display').value = '';
+        }
+
+        function calcCalculate() {
+            const display = document.getElementById('calc-display');
+            try {
+                let expr = display.value;
+                // Basic sanitization to prevent evaluation of dangerous code
+                if(/^[0-9+\-*/.\s]+$/.test(expr)) {
+                    display.value = eval(expr);
+                } else {
+                    display.value = 'Error';
+                }
+            } catch(e) {
+                display.value = 'Error';
+            }
+        }
+
+        function calcBackspace() {
+            const display = document.getElementById('calc-display');
+            if(display.value === 'Error') display.value = '';
+            else display.value = display.value.slice(0, -1);
+        }
+
+        // --- MAKE CALCULATOR DRAGGABLE ---
+        dragElement(document.getElementById("calculator-widget"));
+
+        function dragElement(elmnt) {
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            if (document.getElementById("calc-header")) {
+                document.getElementById("calc-header").onmousedown = dragMouseDown;
+                document.getElementById("calc-header").ontouchstart = dragMouseDown; // Mobile support
+            } else {
+                elmnt.onmousedown = dragMouseDown;
+                elmnt.ontouchstart = dragMouseDown;
+            }
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                if(e.type === "mousedown") e.preventDefault(); // Prevent text selection while dragging
+                pos3 = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+                pos4 = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                let clientX = e.clientX || (e.touches ? e.touches[0].clientX : pos3);
+                let clientY = e.clientY || (e.touches ? e.touches[0].clientY : pos4);
+                pos1 = pos3 - clientX;
+                pos2 = pos4 - clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                elmnt.style.right = "auto"; // Un-snap from the right side
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+            }
+        }
     </script>
 </body>
 </html>

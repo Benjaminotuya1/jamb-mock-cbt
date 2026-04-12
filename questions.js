@@ -206,7 +206,13 @@ const db = {
         // MATRICES
         { q: "If $A = \\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}$ and $B = \\begin{pmatrix} 2 & 0 \\\\ 1 & 1 \\end{pmatrix}$, find $A + B$.", options: ["$\\begin{pmatrix} 3 & 2 \\\\ 4 & 5 \\end{pmatrix}$", "$\\begin{pmatrix} 2 & 0 \\\\ 3 & 4 \\end{pmatrix}$", "$\\begin{pmatrix} 3 & 2 \\\\ 2 & 5 \\end{pmatrix}$", "$\\begin{pmatrix} -1 & 2 \\\\ 2 & 3 \\end{pmatrix}$"], answer: 0 },
         { q: "If $M = \\begin{pmatrix} 2 & -1 \\\\ 3 & 1 \\end{pmatrix}$, find the determinant of $M$.", options: ["5", "-1", "1", "4"], answer: 0 },
-        { q: "Find $2A$ if $A = \\begin{pmatrix} 1 & 0 \\\\ -2 & 3 \\end{pmatrix}$.", options: ["$\\begin{pmatrix} 2 & 0 \\\\ -4 & 6 \\end{pmatrix}$", "$\\begin{pmatrix} 2 & 2 \\\\ -4 & 6 \\end{pmatrix}$", "$\\begin{pmatrix} 1 & 0 \\\\ -4 & 6 \\end{pmatrix}$", "$\\begin{pmatrix} 2 & 0 \\\\ -2 & 3 \\end{pmatrix}$"], answer: 0 }
+        { q: "Find $2A$ if $A = \\begin{pmatrix} 1 & 0 \\\\ -2 & 3 \\end{pmatrix}$.", options: ["$\\begin{pmatrix} 2 & 0 \\\\ -4 & 6 \\end{pmatrix}$", "$\\begin{pmatrix} 2 & 2 \\\\ -4 & 6 \\end{pmatrix}$", "$\\begin{pmatrix} 1 & 0 \\\\ -4 & 6 \\end{pmatrix}$", "$\\begin{pmatrix} 2 & 0 \\\\ -2 & 3 \\end{pmatrix}$"], answer: 0 },
+        // ADVANCED JAMB QUESTIONS
+        { q: "Evaluate $\\int_0^{\\pi/2} \\sin^2(x) \\cos(x) dx$.", options: ["1/2", "1/3", "1", "0"], answer: 1 },
+        { q: "A circle has the equation $x^2 + y^2 - 4x + 6y - 12 = 0$. Find its radius.", options: ["3", "4", "5", "25"], answer: 2 },
+        { q: "Find the derivative of $y = x^2e^{2x}$.", options: ["$2xe^{2x}(x + 1)$", "$xe^{2x}(2x + 1)$", "$2xe^{2x}(1 - x)$", "$2e^{2x}(x^2 + x)$"], answer: 0 },
+        { q: "A fair die is rolled twice. What is the probability that the sum of the scores is at least 10?", options: ["1/6", "1/12", "5/36", "1/4"], answer: 0 },
+        { q: "If $\\alpha$ and $\\beta$ are the roots of $2x^2 - 5x + 3 = 0$, evaluate $\\frac{1}{\\alpha} + \\frac{1}{\\beta}$.", options: ["5/3", "3/5", "-5/3", "2/5"], answer: 0 }
     ],
     "Biology": [
         // CELLS & ORGANISMS
@@ -568,7 +574,13 @@ const db = {
         { q: "The process of breaking down large hydrocarbon molecules into smaller ones is:", options: ["Polymerization", "Cracking", "Reforming", "Fractional distillation"], answer: 1 },
         { q: "The IUPAC name for $CH_3CH_2COOH$ is:", options: ["Ethanoic acid", "Propanoic acid", "Butanoic acid", "Methanoic acid"], answer: 1 },
         { q: "Which of the following is a natural polymer?", options: ["Nylon", "Polythene", "Cellulose", "PVC"], answer: 2 },
-        { q: "Saponification is the hydrolysis of fats and oils with:", options: ["Acid", "Enzymes", "Alkali", "Water"], answer: 2 }
+        { q: "Saponification is the hydrolysis of fats and oils with:", options: ["Acid", "Enzymes", "Alkali", "Water"], answer: 2 },
+        // ADVANCED JAMB QUESTIONS
+        { q: "In the extraction of iron in the blast furnace, limestone is used to:", options: ["Reduce iron ore", "Produce oxygen", "Remove silica impurities as slag", "Act as a catalyst"], answer: 2 },
+        { q: "Which of these pairs consists of structural isomers?", options: ["Ethane and Ethene", "Butane and 2-methylpropane", "Propan-1-ol and Propanone", "Benzene and Cyclohexane"], answer: 1 },
+        { q: "What mass of silver is deposited when a current of 2.5A is passed through a solution of $AgNO_3$ for 2 hours? (Ag=108, 1F=96500C)", options: ["10.80g", "20.15g", "5.40g", "40.30g"], answer: 1 },
+        { q: "The shape of the ammonia molecule ($NH_3$) is distorted from a perfect tetrahedron because of:", options: ["Hydrogen bonding", "Lone pair-bond pair repulsion", "Its low molar mass", "High electronegativity of nitrogen"], answer: 1 },
+        { q: "The oxidation state of Chromium in the dichromate ion ($Cr_2O_7^{2-}$)", options: ["+4", "+5", "+6", "+7"], answer: 2 }
     ],
     "Physics": [
         // MECHANICS: MEASUREMENT, VECTORS & MOTION
@@ -641,7 +653,13 @@ const db = {
         { q: "Which of the following is a vector quantity?", options: ["Speed", "Distance", "Displacement", "Time"], answer: 2 },
         { q: "The clinical thermometer uses mercury because it:", options: ["Wets glass", "Is opaque", "Has low expansivity", "Is cheap"], answer: 1 },
         { q: "The primary colors of light are:", options: ["Red, Yellow, Blue", "Red, Green, Blue", "Yellow, Cyan, Magenta", "Red, White, Black"], answer: 1 },
-        { q: "The period of a simple pendulum depends on its:", options: ["Mass of bob", "Amplitude", "Length", "Initial velocity"], answer: 2 }
+        { q: "The period of a simple pendulum depends on its:", options: ["Mass of bob", "Amplitude", "Length", "Initial velocity"], answer: 2 },
+        // ADVANCED JAMB QUESTIONS
+        { q: "A transformer with 500 turns in the primary coil and 2500 turns in the secondary coil is connected to a 240V a.c supply. Calculate the output voltage.", options: ["48V", "1200V", "120V", "6000V"], answer: 1 },
+        { q: "Half-life of a radioactive element is 3 minutes. What fraction of the original mass will decay in 12 minutes?", options: ["1/16", "15/16", "1/8", "7/8"], answer: 1 },
+        { q: "The energy required to completely remove an electron from the ground state of a hydrogen atom is 13.6 eV. What is the wavelength of the photon emitted when an electron falls from the first excited state to the ground state? (h=$6.6\\times 10^{-34}$ Js, c=$3\\times 10^8$ m/s, 1eV=$1.6\\times 10^{-19}$ J)", options: ["122 nm", "103 nm", "91 nm", "150 nm"], answer: 0 },
+        { q: "An object is placed 15cm in front of a convex mirror of focal length 10cm. The image distance is:", options: ["30cm", "-6cm", "-30cm", "6cm"], answer: 1 },
+        { q: "If the velocity of sound in air at 0°C is 330 m/s, its velocity at 30°C is approximately:", options: ["330 m/s", "348 m/s", "360 m/s", "312 m/s"], answer: 1 }
     ],
     "Economics": [
         // BASIC CONCEPTS & ECONOMIC SYSTEMS

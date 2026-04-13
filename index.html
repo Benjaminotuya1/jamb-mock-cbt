@@ -341,7 +341,7 @@ let userSubjects = ['Use of English'];
             let phone = phoneInput.value.trim();
             let category = catInput.value;
             
-            let isAdmin = (fullName.toUpperCase() === 'ADMIN' && phone === '9999');
+            let isAdmin = (fullName.toUpperCase() === 'ADMIN' && phone === '123456789');
             
             if(localStorage.getItem('jamb_exam_done_' + phone) && !isAdmin) {
                 startBtn.innerText = "EXAM ALREADY TAKEN";
@@ -373,7 +373,7 @@ let userSubjects = ['Use of English'];
             const fullName = nameInput.value.trim();
             const phone = phoneInput.value.trim();
             
-            if (fullName.toUpperCase() === 'ADMIN' && phone === '9999') {
+            if (fullName.toUpperCase() === 'ADMIN' && phone === '123456789') {
                 document.getElementById('setup-screen').style.display = 'none';
                 viewLeaderboard();
                 return;
@@ -555,6 +555,15 @@ let userSubjects = ['Use of English'];
         // --- LEADERBOARD LOGIC ---
         let currentLeaderboardData = null;
 
+        function maskPhone(phoneStr) {
+            if (!phoneStr) return "Unknown";
+            let cleaned = String(phoneStr).replace(/\D/g, '');
+            if (cleaned.length >= 10) {
+                return cleaned.substring(0, 4) + "****" + cleaned.substring(cleaned.length - 3);
+            }
+            return phoneStr;
+        }
+
         function fetchLeaderboardData() {
             document.getElementById('leaderboard-content').innerHTML = "<p style='text-align:center;'>Fetching live scores...</p>";
             
@@ -566,7 +575,7 @@ let userSubjects = ['Use of English'];
                     let lb = { "Overall": [], "Science": [], "Arts": [], "Commercial": [] };
                     
                     records.forEach(row => {
-                        let entry = { user: row.fullName, score: parseInt(row.score) || 0 };
+                        let entry = { user: row.phone || row.fullName || "Unknown", score: parseInt(row.score) || 0 };
                         lb["Overall"].push(entry);
                         
                         if(row.category && lb[row.category]) {
@@ -577,7 +586,7 @@ let userSubjects = ['Use of English'];
                             let breakdown = JSON.parse(row.breakdown);
                             for (let sub in breakdown) {
                                 if (!lb[sub]) lb[sub] = [];
-                                lb[sub].push({ user: row.fullName, score: parseInt(breakdown[sub]) });
+                                lb[sub].push({ user: row.phone || row.fullName || "Unknown", score: parseInt(breakdown[sub]) });
                             }
                         } catch(e) {}
                     });
@@ -604,17 +613,17 @@ let userSubjects = ['Use of English'];
         function generateMockLeaderboard() {
             return {
                 "Overall": [
-                    {user: "JAMB045", name: "David Ojo", score: 340}, {user: "JAMB112", name: "Sarah Musa", score: 315}, {user: "JAMB007", name: "John Doe", score: 298},
-                    {user: "JAMB189", name: "Mercy Okafor", score: 285}, {user: "JAMB033", name: "Paul Adamu", score: 270}, {user: "JAMB099", name: "Diana Prince", score: 265},
-                    {user: "JAMB021", name: "Evan Wright", score: 250}, {user: "JAMB156", name: "Fiona Clark", score: 245}, {user: "JAMB088", name: "George Hall", score: 240}, {user: "JAMB102", name: "Hannah Lee", score: 230}
+                    {user: "08012345678", score: 340}, {user: "08123456789", score: 315}, {user: "07098765432", score: 298},
+                    {user: "09011122233", score: 285}, {user: "08055544433", score: 270}, {user: "08199988877", score: 265},
+                    {user: "07033322211", score: 250}, {user: "09188877766", score: 245}, {user: "08077766655", score: 240}, {user: "08166655544", score: 230}
                 ],
                 "Mathematics": [
-                    {user: "JAMB045", name: "David Ojo", score: 95}, {user: "JAMB112", name: "Sarah Musa", score: 82}, {user: "JAMB007", name: "John Doe", score: 78},
-                    {user: "JAMB189", name: "Mercy Okafor", score: 75}, {user: "JAMB033", name: "Paul Adamu", score: 70}, {user: "JAMB099", name: "Diana Prince", score: 68}
+                    {user: "08012345678", score: 95}, {user: "08123456789", score: 82}, {user: "07098765432", score: 78},
+                    {user: "09011122233", score: 75}, {user: "08055544433", score: 70}, {user: "08199988877", score: 68}
                 ],
                 "Use of English": [
-                    {user: "JAMB189", name: "Mercy Okafor", score: 88}, {user: "JAMB045", name: "David Ojo", score: 85}, {user: "JAMB112", name: "Sarah Musa", score: 80},
-                    {user: "JAMB007", name: "John Doe", score: 75}, {user: "JAMB099", name: "Diana Prince", score: 72}, {user: "JAMB033", name: "Paul Adamu", score: 65}
+                    {user: "09011122233", score: 88}, {user: "08012345678", score: 85}, {user: "08123456789", score: 80},
+                    {user: "07098765432", score: 75}, {user: "08199988877", score: 72}, {user: "08055544433", score: 65}
                 ]
             };
         }
@@ -643,16 +652,17 @@ let userSubjects = ['Use of English'];
             } else {
                 data.forEach((row, index) => {
                     let rankIcon = (index + 1) + ".";
-                    if(index === 0) rankIcon = "🥇";
-                    if(index === 1) rankIcon = "🥈";
-                    if(index === 2) rankIcon = "🥉";
+                    let rowClass = "lb-row";
+                    if(index === 0) { rankIcon = "🥇"; rowClass += " rank-1"; }
+                    if(index === 1) { rankIcon = "🥈"; rowClass += " rank-2"; }
+                    if(index === 2) { rankIcon = "🥉"; rowClass += " rank-3"; }
                     
                     let maxScore = category === "Overall" ? "/400" : "/100";
                     
                     html += `
-                    <div class="lb-row">
+                    <div class="${rowClass}">
                         <div class="lb-rank">${rankIcon}</div>
-                        <div class="lb-user">${row.user}</div>
+                        <div class="lb-user">${maskPhone(row.user)}</div>
                         <div class="lb-score">${row.score}<span style="font-size:12px;color:#888;font-weight:normal;">${maxScore}</span></div>
                     </div>`;
                 });
@@ -685,7 +695,7 @@ let userSubjects = ['Use of English'];
                 if(index === 1) rankIcon = "🥈";
                 if(index === 2) rankIcon = "🥉";
                 let maxScore = category === "Overall" ? "/400" : "/100";
-                text += `${rankIcon} ${row.user} - ${row.score}${maxScore}\n`;
+                text += `${rankIcon} ${maskPhone(row.user)} - ${row.score}${maxScore}\n`;
             });
             
             text += `\nPowered by JAMB Mock App`;
@@ -726,6 +736,14 @@ let userSubjects = ['Use of English'];
                 (e.ctrlKey && e.key === 'u') // View Source
             ) {
                 e.preventDefault();
+            }
+        });
+
+        // --- PREVENT ACCIDENTAL CLOSURE ---
+        window.addEventListener('beforeunload', function (e) {
+            if (examActive) {
+                e.preventDefault();
+                e.returnValue = '';
             }
         });
 

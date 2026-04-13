@@ -433,6 +433,8 @@ let userSubjects = ['Use of English'];
             qData.options.forEach((opt, idx) => {
                 let checked = answers[currentSubject][currentIndex] === idx ? "checked" : "";
                 optionsHtml += `<li><label><input type="radio" name="opt" value="${idx}" ${checked} onchange="saveAnswer(${idx})"> ${String.fromCharCode(65+idx)}. ${opt}</label></li>`;
+                let selectedClass = checked ? "selected" : "";
+                optionsHtml += `<li class="${selectedClass}"><label><input type="radio" name="opt" value="${idx}" ${checked} onchange="saveAnswer(${idx})"> ${String.fromCharCode(65+idx)}. ${opt}</label></li>`;
             });
             document.getElementById("q-options").innerHTML = optionsHtml;
             renderGrid();
@@ -444,6 +446,14 @@ let userSubjects = ['Use of English'];
         }
 
         function saveAnswer(idx) { answers[currentSubject][currentIndex] = idx; renderGrid(); persistState(); }
+        function saveAnswer(idx) { 
+            answers[currentSubject][currentIndex] = idx; 
+            renderGrid(); 
+            persistState(); 
+            document.querySelectorAll('#q-options li').forEach((li, i) => {
+                if(i === idx) li.classList.add('selected'); else li.classList.remove('selected');
+            });
+        }
 
         function renderGrid() {
             let gridHtml = "";
@@ -460,7 +470,22 @@ let userSubjects = ['Use of English'];
         function nextQuestion() { if (currentIndex < sessionExam[currentSubject].length - 1) { currentIndex++; loadQuestion(); persistState(); } }
         function prevQuestion() { if (currentIndex > 0) { currentIndex--; loadQuestion(); persistState(); } }
 
-        function confirmSubmit() { if(confirm("Submit exam?")) submitExam(); }
+        function confirmSubmit() {
+            let unanswered = 0;
+            userSubjects.forEach(sub => {
+                if(answers[sub]) {
+                    answers[sub].forEach(ans => {
+                        if (ans === null) unanswered++;
+                    });
+                }
+            });
+            
+            let msg = unanswered > 0 
+                ? `You still have ${unanswered} unanswered question(s).\n\nAre you sure you want to submit your exam now?`
+                : `Are you sure you want to submit your exam?`;
+                
+            if(confirm(msg)) submitExam();
+        }
 
         function viewLeaderboard() {
             document.getElementById("result-screen").style.display = "none";
@@ -552,6 +577,48 @@ let userSubjects = ['Use of English'];
             localStorage.setItem('jamb_current_session', JSON.stringify(state));
         }
 
+        // --- REVIEW ANSWERS LOGIC ---
+        function reviewAnswers() {
+            document.getElementById("result-screen").style.display = "none";
+            document.getElementById("review-screen").style.display = "block";
+            
+            let html = "";
+            userSubjects.forEach(sub => {
+                html += `<h3 class="review-subject-title">${sub}</h3>`;
+                sessionExam[sub].forEach((qData, idx) => {
+                    let userAns = answers[sub][idx];
+                    let correctAns = qData.answer;
+                    let isCorrect = userAns === correctAns;
+                    let blockClass = isCorrect ? "correct" : "incorrect";
+                    
+                    html += `<div class="review-q-block ${blockClass}">
+                        <div style="font-weight:bold; margin-bottom:10px; font-size: 16px;">Q${idx + 1}. ${qData.q}</div>`;
+                    
+                    qData.options.forEach((opt, optIdx) => {
+                        let optClass = "review-option";
+                        let indicator = "";
+                        
+                        if (optIdx === correctAns) { optClass += " correct-ans"; indicator = " ✔️"; }
+                        else if (optIdx === userAns && !isCorrect) { optClass += " wrong-ans"; indicator = " ❌"; }
+                        
+                        html += `<div class="${optClass}">${String.fromCharCode(65+optIdx)}. ${opt}${indicator}</div>`;
+                    });
+                    
+                    if (userAns === null) {
+                        html += `<div style="color:#d9534f; font-weight:bold; margin-top:8px; font-size:14px;">⚠️ You did not answer this question.</div>`;
+                    }
+                    html += `</div>`;
+                });
+            });
+            document.getElementById("review-content").innerHTML = html;
+            if (window.MathJax) MathJax.typesetPromise().catch((err) => console.log('MathJax Error:', err));
+        }
+
+        function closeReview() {
+            document.getElementById("review-screen").style.display = "none";
+            document.getElementById("result-screen").style.display = "block";
+        }
+
         // --- LEADERBOARD LOGIC ---
         let currentLeaderboardData = null;
 
@@ -561,7 +628,10 @@ let userSubjects = ['Use of English'];
             if (cleaned.length >= 10) {
                 return cleaned.substring(0, 4) + "****" + cleaned.substring(cleaned.length - 3);
             }
-            return phoneStr;
+            
+            // If the database returns a name instead of a phone, forcefully mask the name for privacy!
+            let str = String(phoneStr);
+            return str.length > 4 ? str.substring(0, 3) + "*****" + str.substring(str.length - 1) : "*****";
         }
 
         function fetchLeaderboardData() {
@@ -575,7 +645,8 @@ let userSubjects = ['Use of English'];
                     let lb = { "Overall": [], "Science": [], "Arts": [], "Commercial": [] };
                     
                     records.forEach(row => {
-                        let entry = { user: row.phone || row.fullName || "Unknown", score: parseInt(row.score) || 0 };
+                        let actualPhone = row.phone || row.Phone || row.phoneNumber || row.PhoneNumber;
+                        let entry = { user: actualPhone || row.fullName || "Unknown", score: parseInt(row.score) || 0 };
                         lb["Overall"].push(entry);
                         
                         if(row.category && lb[row.category]) {
@@ -586,7 +657,7 @@ let userSubjects = ['Use of English'];
                             let breakdown = JSON.parse(row.breakdown);
                             for (let sub in breakdown) {
                                 if (!lb[sub]) lb[sub] = [];
-                                lb[sub].push({ user: row.phone || row.fullName || "Unknown", score: parseInt(breakdown[sub]) });
+                                lb[sub].push({ user: actualPhone || row.fullName || "Unknown", score: parseInt(breakdown[sub]) });
                             }
                         } catch(e) {}
                     });
